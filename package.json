@@ -1,0 +1,15 @@
+{
+  "name": "read-later",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prestart": "npm install",
+    "start": "browser-sync start -s -f '.' -o"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browser-sync": "^2.23.6"
+  }
+}
