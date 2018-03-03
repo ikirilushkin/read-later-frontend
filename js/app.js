@@ -1,3 +1,36 @@
+/** CONSTANTS */
+const unreadTab = document.querySelector("div[data-type='1']");
+const readTab = document.querySelector("div[data-type='2']");
+const searchTab = document.querySelector("div[data-type='3']");
+
+const unreadList = unreadTab.firstElementChild.nextElementSibling;
+const unreadText = unreadList.nextElementSibling;
+const readList = readTab.firstElementChild;
+const readText = readList.nextElementSibling;
+const searchList = searchTab.firstElementChild.nextElementSibling;
+const searchText = searchList.nextElementSibling;
+
+const addForm = document.querySelector(".rl-add-form");
+const titleInput = document.querySelector("#title");
+const urlInput = document.querySelector("#url");
+const tagsInput = document.querySelector("#tags");
+
+const searchForm = document.querySelector(".rl-search-form");
+const tagSearchInput = document.querySelector("#tagSearch");
+const linkSearchInput = document.querySelector("#linkSearch");
+const unreadCheckbox = document.querySelector("#unreadCheckbox");
+const readCheckbox = document.querySelector("#readCheckbox");
+
+const messages = {
+  "validation.error.bookmark.url.size": "Ссылка не может быть пустой",
+  "validation.error.bookmark.url.unique":
+    "Закладка с такой ссылкой уже существует",
+  "validation.error.bookmark.title.size":
+    "Введите название закладки. Длина от 1 до 100 символов"
+};
+
+/** END OF CONSTANTS */
+
 class Bookmark {
   constructor(id, title, url, tags, read) {
     this.id = id;
@@ -9,44 +42,30 @@ class Bookmark {
 }
 
 /** REQUESTS */
-function getUnreadBookmarks() {
+// Get bookmarks
+function getBookmarks(read, success, error) {
   const request = new XMLHttpRequest();
-  request.open("GET", "http://localhost:8080/api/bookmarks?read=false", true);
+  request.open("GET", `http://localhost:8080/api/bookmarks?read=${read}`, true);
   request.addEventListener("load", function() {
     if (request.status === 200) {
-      const bookmarks = JSON.parse(request.responseText);
-      fillBookmarkList(unreadList, bookmarks);
+      success(JSON.parse(request.responseText));
     } else {
-      // error
-    }
-  });
-  request.send();
-}
-
-function getReadBookmarks() {
-  const request = new XMLHttpRequest();
-  request.open("GET", "http://localhost:8080/api/bookmarks?read=true", true);
-  request.addEventListener("load", function() {
-    if (request.status === 200) {
-      const bookmarks = JSON.parse(request.responseText);
-      fillBookmarkList(readList, bookmarks);
-    } else {
-      // error
+      error(JSON.parse(request.responseText));
     }
   });
   request.send();
 }
 
 // Add bookmark
-function addBookmark(bookmark) {
+function addBookmark(bookmark, success, error) {
   const request = new XMLHttpRequest();
   request.open("POST", "http://localhost:8080/api/bookmarks", true);
   request.addEventListener("readystatechange", function() {
     if (request.readyState === XMLHttpRequest.DONE) {
       if (request.status === 200) {
-        fillUnread();
+        success();
       } else {
-        $("#addBookmarkModal").modal("open");
+        error(JSON.parse(request.response));
       }
     }
   });
@@ -55,7 +74,7 @@ function addBookmark(bookmark) {
 }
 
 // Search
-function search(searchParams) {
+function search(searchParams, success, error) {
   url = "http://localhost:8080/api/bookmarks/search";
   searchParams.forEach((param, i) => {
     urlParam = `${i > 0 ? "&" : "?"}${param.key}=${param.value}`;
@@ -65,11 +84,9 @@ function search(searchParams) {
   request.open("GET", url, true);
   request.addEventListener("load", function() {
     if (request.status === 200) {
-      const bookmarks = JSON.parse(request.responseText);
-      fillBookmarkList(searchList, bookmarks);
+      success(JSON.parse(request.responseText));
     } else {
-      console.log("error");
-      // error
+      error(JSON.parse(request.responseText));
     }
   });
   request.send();
@@ -114,33 +131,13 @@ function deleteBookmark(id, callback) {
 
 /** END OF REQUESTS */
 
-/** CONSTANTS */
-const unreadTab = document.querySelector("div[data-type='1']");
-const readTab = document.querySelector("div[data-type='2']");
-const searchTab = document.querySelector("div[data-type='3']");
-
-const unreadList = unreadTab.firstElementChild.nextElementSibling;
-const readList = readTab.firstElementChild;
-const searchList = searchTab.firstElementChild.nextElementSibling;
-
-const addForm = document.querySelector(".rl-add-form");
-const titleInput = document.querySelector("#title");
-const linkInput = document.querySelector("#link");
-const tagsInput = document.querySelector("#tags");
-
-const searchForm = document.querySelector(".rl-search-form");
-const tagSearchInput = document.querySelector("#tagSearch");
-const linkSearchInput = document.querySelector("#linkSearch");
-const unreadCheckbox = document.querySelector("#unreadCheckbox");
-const readCheckbox = document.querySelector("#readCheckbox");
-
-/** END OF CONSTANTS */
-
 function fillTags(tags) {
   const tagWrapper = document.createElement("div");
   tags.forEach(tag => {
-    const tagElem = document.createElement("div");
+    const tagElem = document.createElement("a");
+    tagElem.setAttribute("href", "#");
     tagElem.classList.add("chip");
+    tagElem.classList.add("rl-tag");
     tagElem.innerHTML = `${tag}`;
     tagWrapper.appendChild(tagElem);
   });
@@ -148,24 +145,22 @@ function fillTags(tags) {
 }
 
 function fillBookmarkList(list, bookmarks) {
-  if (bookmarks.length > 0) {
-    list.style.display = "block";
-    bookmarks.forEach(element => {
-      const li = document.createElement("li");
-      li.classList.add("collection-item");
-      li.innerHTML = `<div class="row">
+  bookmarks.forEach(element => {
+    const li = document.createElement("li");
+    li.classList.add("collection-item");
+    li.innerHTML = `<div class="row">
                         <div class="col s1">
                             <input type="checkbox" id="bookmark${
                               element.id
                             }" data-id="${element.id}" ${
-        element.read ? "checked" : ""
-      }/>
+      element.read ? "checked" : ""
+    }/>
                             <label for="bookmark${element.id}"></label>
                         </div>
                         <div class="col s4">
                             <a href="${element.url}" target="_blank">${
-        element.title
-      }</a>
+      element.title
+    }</a>
                         </div>
                         <div class="col s5">${fillTags(element.tags)}
                         </div>
@@ -173,25 +168,40 @@ function fillBookmarkList(list, bookmarks) {
                             <a href="#" class="rl-delete" data-id="${
                               element.id
                             }">
-                                <i class="small material-icons">delete</i>
+                                <i class="small material-icons right">delete</i>
                             </a>
                         </div>
                     </div>`;
-      list.appendChild(li);
-    });
-  } else {
-    list.style.display = "none";
-  }
+    list.appendChild(li);
+  });
 }
 
 function fillUnread() {
   unreadList.innerHTML = "";
-  getUnreadBookmarks();
+  getBookmarks(false, function(bookmarks) {
+    if (bookmarks.length > 0) {
+      unreadText.classList.add("hide");
+      unreadList.classList.remove("hide");
+      fillBookmarkList(unreadList, bookmarks);
+    } else {
+      unreadText.classList.remove("hide");
+      unreadList.classList.add("hide");
+    }
+  });
 }
 
 function fillRead() {
   readList.innerHTML = "";
-  getReadBookmarks();
+  getBookmarks(true, function(bookmarks) {
+    if (bookmarks.length > 0) {
+      readText.classList.add("hide");
+      readList.classList.remove("hide");
+      fillBookmarkList(readList, bookmarks);
+    } else {
+      readText.classList.remove("hide");
+      readList.classList.add("hide");
+    }
+  });
 }
 
 function init() {
@@ -207,6 +217,32 @@ function parseTags(text) {
   return list;
 }
 
+function searchForTag(tag) {
+  tagSearchInput.value = tag;
+  $("ul.tabs").tabs("select_tab", "searchTab");
+  searchForm.dispatchEvent(new Event("submit"));
+}
+
+function handleListClick(e, callback) {
+  if (e.target.parentElement.classList.contains("rl-delete")) {
+    e.preventDefault();
+    const link = e.target.parentElement;
+    const id = link.getAttribute("data-id");
+    deleteBookmark(id, callback);
+  } else if (e.target.classList.contains("rl-tag")) {
+    searchForTag(e.target.innerHTML);
+  }
+}
+
+function emptySearchForm() {
+  tagSearchInput.value = "";
+  linkSearchInput.value = "";
+  unreadCheckbox.checked = false;
+  readCheckbox.checked = false;
+  searchList.innerHTML = "";
+  searchList.classList.add("hide");
+}
+
 /** EVENT LISTENERS */
 unreadList.addEventListener("change", function(e) {
   id = e.target.getAttribute("data-id");
@@ -219,30 +255,43 @@ readList.addEventListener("change", function(e) {
 });
 
 unreadList.addEventListener("click", function(e) {
-  if (e.target.parentElement.classList.contains("rl-delete")) {
-    e.preventDefault();
-    const link = e.target.parentElement;
-    const id = link.getAttribute("data-id");
-    deleteBookmark(id, fillUnread);
-  }
+  handleListClick(e, fillUnread);
 });
 
 readList.addEventListener("click", function(e) {
-  if (e.target.parentElement.classList.contains("rl-delete")) {
-    e.preventDefault();
-    const link = e.target.parentElement;
-    const id = link.getAttribute("data-id");
-    deleteBookmark(id, fillRead);
-  }
+  handleListClick(e, fillRead);
 });
 
 addForm.addEventListener("submit", function(e) {
   e.preventDefault();
   bookmark = new Bookmark();
   bookmark.title = titleInput.value;
-  bookmark.url = linkInput.value;
+  bookmark.url = urlInput.value;
   bookmark.tags = parseTags(tagsInput.value);
-  addBookmark(bookmark);
+  addBookmark(
+    bookmark,
+    function() {
+      $("#addBookmarkModal").modal("open");
+      titleInput.value = "";
+      urlInput.value = "";
+      tagsInput.value = "";
+      titleInput.classList.remove("valid");
+      urlInput.classList.remove("valid");
+      tagsInput.classList.remove("valid");
+      fillUnread();
+    },
+    function(response) {
+      const input = document.querySelector(`#${response.field}`);
+      const label = input.nextElementSibling;
+      label.setAttribute("data-error", messages[response.code]);
+      input.classList.add("invalid");
+    }
+  );
+});
+
+addForm.addEventListener("keydown", function(e) {
+  titleInput.classList.remove("invalid");
+  urlInput.classList.remove("invalid");
 });
 
 searchForm.addEventListener("submit", function(e) {
@@ -261,20 +310,32 @@ searchForm.addEventListener("submit", function(e) {
     searchParams.push({ key: "read", value: readCheckbox.checked });
   }
   searchList.innerHTML = "";
-  search(searchParams);
+  search(searchParams, function(bookmarks) {
+    if (bookmarks.length > 0) {
+      searchText.classList.add("hide");
+      searchList.classList.remove("hide");
+      fillBookmarkList(searchList, bookmarks);
+    } else {
+      searchText.classList.remove("hide");
+      searchList.classList.add("hide");
+    }
+  });
 });
 
 /** END OF EVENT LISTENERS */
 
 $(document).ready(function() {
   $("#addBookmarkModal").modal();
+  $("#deleteBookmarkModal").modal();
   $("ul.tabs").tabs({
     onShow: function(tab) {
       switch (tab[0].getAttribute("data-type")) {
         case "1":
+          emptySearchForm();
           fillUnread();
           break;
         case "2":
+          emptySearchForm();
           fillRead();
           break;
       }
