@@ -95,7 +95,11 @@ function search(searchParams, success, error) {
 // Update read status
 function updateRead(id, read, callback) {
   const request = new XMLHttpRequest();
-  request.open("PUT", `http://localhost:8080/api/bookmarks/${id}`, true);
+  request.open(
+    read ? "PUT" : "DELETE",
+    `http://localhost:8080/api/bookmarks/${id}/read`,
+    true
+  );
   request.addEventListener("readystatechange", function() {
     if (request.readyState === XMLHttpRequest.DONE) {
       if (request.status === 200) {
@@ -105,12 +109,8 @@ function updateRead(id, read, callback) {
       }
     }
   });
-  request.setRequestHeader("Content-Type", "application/json");
-  request.send(
-    JSON.stringify({
-      read: read
-    })
-  );
+  //request.setRequestHeader("Content-Type", "application/json");
+  request.send();
 }
 
 // Delete bookmark
