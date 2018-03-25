@@ -37,17 +37,15 @@ describe("bookmark read later app", function() {
 
   describe("bookmark should be added", function() {
     const form = unreadTab.element(by.tagName("form"));
-    console.log(form);
-    const titleInput = form.element
-      .all(by.css("input-field"))
+    const titleInput = element
+      .all(by.css(".input-field"))
       .get(0)
       .element(by.tagName("input"));
-    if (
-      ("bookmark should be added",
-      function() {
-        titleInput.sendKeys("bookmark1");
-        browser.pause();
-      })
-    );
+    console.log(titleInput);
+    it("bookmark should be added", function() {
+      titleInput.sendKeys("bookmark1");
+      expect(titleInput.getAttribute("value")).toBe("bookmark1");
+      //browser.pause(3000);
+    });
   });
 });
